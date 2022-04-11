@@ -1,0 +1,4 @@
+{
+    "npm.exclude": "data",
+    "typescript.check.npmIsInstalled": false
+}

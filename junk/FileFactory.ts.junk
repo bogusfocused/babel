@@ -1,0 +1,43 @@
+import { Parsable } from "./transforms";
+import { FileSystemObject } from "./node/FileSystemObject";
+import { ContextProvider } from "./base";
+import { File } from "./base/File";
+import { PropTypeDefs } from "./propTypesParser";
+
+declare module "./base/File" {
+  interface File
+    extends FileSystemObject,
+      PropTypeDefs,
+      Parsable,
+      ContextProvider {}
+}
+export function applyMixins() {
+  _applyMixins(File, [
+    ContextProvider,
+    FileSystemObject,
+    PropTypeDefs,
+    Parsable,
+  ]);
+}
+function _applyMixins(derivedCtor: any, constructors: any[]) {
+  constructors.forEach((baseCtor) => {
+    Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
+      Object.defineProperty(
+        derivedCtor.prototype,
+        name,
+        Object.getOwnPropertyDescriptor(baseCtor.prototype, name) ||
+          Object.create(null)
+      );
+    });
+  });
+}
+const fileCache = {} as Record<string, File>;
+export function getFile(path: string) {
+  let file = fileCache[path];
+  if (file) return file;
+  file = new File(path);
+  fileCache[path] = file;
+  return file;
+}
+
+export { File };

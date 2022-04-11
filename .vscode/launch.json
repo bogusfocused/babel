@@ -1,0 +1,36 @@
+{
+  "configurations": [
+    {
+      "name": "Launch Current File",
+      "program": "${workspaceFolder}/lib/${fileBasenameNoExtension}.js",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "smartStep": true,
+      "type": "node",
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/lib/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "preLaunchTask": "watch current"
+    },
+    {
+      "name": "Launch Program",
+      "program": "${workspaceFolder}/lib/main.js",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "smartStep": true,
+      "type": "node",
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/lib/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "preLaunchTask": "watch:main"
+    }
+  ]
+}

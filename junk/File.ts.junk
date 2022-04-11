@@ -1,0 +1,26 @@
+import Path from "path";
+
+export class File {
+  private readonly file: string;
+
+  constructor(file: string) {
+    this.file = file;
+  }
+
+  get filename() {
+    return Path.posix.basename(this.file, ".js");
+  }
+  get sourceFile() {
+    return this.file;
+  }
+
+  get directory() {
+    return Path.posix.dirname(this.file);
+  }
+  relativePath(filepath: string) {
+    if (!filepath.startsWith(".")) return filepath;
+    return Path.posix.relative(this.directory, filepath);
+  }
+
+  
+}
