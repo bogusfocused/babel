@@ -1,5 +1,5 @@
-import b, { t } from "../App/babel";
-import { NodePath } from "@babel/core";
+import b from "@babel/core";
+import t from "@babel/types"
 import { Bundle } from "../propTypesParser";
 import { Transform, TransformState } from "./Transform";
 import { createElement } from "./utils";
@@ -11,7 +11,7 @@ export class InjectSlotsVisitor extends Transform {
     this.bundle = bundle;
   }
   JSXExpressionContainer(
-    path: NodePath<t.JSXExpressionContainer>,
+    path: b.NodePath<t.JSXExpressionContainer>,
     state: TransformState
   ) {
     const element = path.parentPath.as(t.isJSXElement);

@@ -40,7 +40,3 @@ NodePath.prototype.as = function (predicate) {
 NodePath.prototype.findParentOfType = function (predicate) {
   return this.findParent((x) => predicate(x.node)) as any;
 };
-import b from "@babel/core";
-export default b;
-export * as t from "@babel/types";
-export * as tr from "@babel/traverse";

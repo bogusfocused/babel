@@ -1,6 +1,7 @@
-import { assertImportDeclaration } from "@babel/types";
-import b, { t } from "../App/babel";
+import b from "@babel/core";
+import t, { assertImportDeclaration } from "@babel/types";
 import { Transform, TransformState, Visitor } from "./Transform";
+
 //
 type State = { relativePath: (file: string) => string };
 export abstract class ImportedValueVisitor

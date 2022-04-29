@@ -1,6 +1,6 @@
-import { PluginPass } from "@babel/core";
-import b, { t, tr } from "../App/babel";
 import { TransformContext } from "../App";
+import b, { types as t } from "@babel/core";
+import { VisitNodeFunction } from "@babel/traverse"
 export type TransformState = b.PluginPass & { state: TransformContext };
 export type Visitor = Partial<
   {
@@ -20,7 +20,7 @@ export abstract class Transform {
     if (visitor) return visitor;
     let nodevisitor = {} as Record<
       string,
-      tr.VisitNodeFunction<TransformState, t.Node>
+      VisitNodeFunction<TransformState, t.Node>
     >;
     let klass = this as any;
     const self = this;

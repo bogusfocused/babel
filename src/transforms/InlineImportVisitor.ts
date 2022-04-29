@@ -1,11 +1,17 @@
 import { TransformContext } from "../App";
-import b, { t } from "../App/babel";
+import b from "@babel/core";
+import t from "@babel/types";
 import { Transform, TransformState, Visitor } from "./Transform";
+
+interface InlineImportFile {
+  noSideEffects: boolean;
+  statements: Array<[t.Statement, string[]]>;
+}
 
 export class InlineImportVisitor extends Transform implements Partial<Visitor> {
   private readonly files: Record<
     string,
-    { context: TransformContext; sideEffects: boolean }
+    InlineImportFile & { context: TransformContext }
   > = {};
   private readonly _paths: string[] = [];
   constructor(files: string[]) {
@@ -17,17 +23,33 @@ export class InlineImportVisitor extends Transform implements Partial<Visitor> {
   async onInit(ctx: TransformContext): Promise<void> {
     for (const file of this._paths) {
       const context = await ctx.app.createTransformContext(file);
-      const sideEffects = context.inspect(
-        {
-          Program(path, state) {
-            state.sideEffects = path
-              .get("body")
-              .every((x) => x.isDeclaration());
+      this.files[file] = {
+        context,
+        ...context.inspect<InlineImportFile>(
+          {
+            Program(path, state) {
+              path.get("body").forEach(s => {
+                state.noSideEffects &&= s.isDeclaration();
+                if (s.isExportNamedDeclaration()) {
+                  state.statements.push([s.node.declaration!, []]);
+                } else {
+                  const names = Object.keys(path.scope.bindings).filter(
+                    name => {
+                      const binding = path.scope.bindings[name];
+                      return (
+                        binding.path.isDescendant(s) ||
+                        binding.referencePaths.some(p => p.isDescendant(s))
+                      );
+                    }
+                  );
+                  state.statements.push([s.node, names]);
+                }
+              });
+            },
           },
-        },
-        { sideEffects: false }
-      ).sideEffects;
-      this.files[file] = { context, sideEffects };
+          { noSideEffects: true, statements: [] }
+        ),
+      };
     }
   }
 
@@ -36,15 +58,18 @@ export class InlineImportVisitor extends Transform implements Partial<Visitor> {
     state: TransformState
   ) {
     const modulePath = state.state.absolutePath(path.node.source.value);
-    const filepath = this._paths.find((x) => x.startsWith(modulePath));
+    const filepath = this._paths.find(x => x.startsWith(modulePath));
     if (!filepath) return;
-    let file = this.files[filepath];
+    const file = this.files[filepath];
     let bstm = [] as t.Statement[];
-    for (const stmt of file.context.ast.program.body) {
-      if (t.isExportNamedDeclaration(stmt)) {
-        bstm.push(stmt.declaration!);
-      } else bstm.push(stmt);
+    for (const [stmt, names] of file.statements) {
+      if (names.every(x => path.scope.getBinding(x) === undefined)) {
+        if (t.isExportNamedDeclaration(stmt)) {
+          bstm.push(stmt.declaration!);
+        } else bstm.push(stmt);
+      }
     }
+    path.scope.removeBinding("useNormalizedInputProps")
     path.replaceWithMultiple(bstm);
   }
 }

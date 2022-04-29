@@ -1,4 +1,5 @@
-import b, { t } from "../App/babel";
+import b from "@babel/core";
+import t from "@babel/types"
 import { Transform } from "./Transform";
 
 export class LabelModuleStmtVisitor extends Transform {

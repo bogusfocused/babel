@@ -1,5 +1,4 @@
-import b, { t } from "../App/babel";
-
+import b, { types as t } from "@babel/core";
 const hasJSXVisitor: b.Visitor<{ hasJSX: boolean }> = {
   JSXElement(path, state) {
     state.hasJSX = true;

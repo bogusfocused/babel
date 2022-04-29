@@ -1,4 +1,5 @@
-import b from "../App/babel";
+import b from "@babel/core";
+import t from "@babel/types"
 import { ImportedValueVisitor } from "./ImportedValueVisitor";
 export class RemoveModuleVisitor extends ImportedValueVisitor {
   constructor(modulename: string, imported?: string) {

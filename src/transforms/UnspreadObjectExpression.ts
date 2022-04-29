@@ -1,8 +1,9 @@
-import b, { t } from "../App/babel";
+import b from "@babel/core";
+import t from "@babel/types"
 import { Transform, Visitor } from "./Transform";
 
 export class UnspreadObjectExpression extends Transform implements Visitor {
-  JSXSpreadAttribute(path: b.NodePath<t.JSXSpreadAttribute>) {
+  JSXSpreadAttribute(path: b.NodePath<b.types.JSXSpreadAttribute>) {
     let argument = path.get("argument");
     while (argument.isParenthesizedExpression())
       argument = argument.get("expression");

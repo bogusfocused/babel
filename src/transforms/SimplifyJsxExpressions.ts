@@ -1,8 +1,10 @@
-import b, { t, tr } from "../App/babel";
+import b from "@babel/core";
+import t from "@babel/types"
+import { Scope } from "@babel/traverse";
 import { Transform } from "./Transform";
 
 export class SimplyJsxExpressionTransform extends Transform {
-  replaceParamWithArg(param: b.NodePath, arg: b.NodePath, scope: tr.Scope) {
+  replaceParamWithArg(param: b.NodePath, arg: b.NodePath, scope: Scope) {
     if (param.isObjectPattern() && arg.isObjectExpression()) {
       const argp = {} as Record<string, b.NodePath<t.ObjectProperty>>;
 

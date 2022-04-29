@@ -1,35 +1,39 @@
-import b from "@babel/core";
+import b, { types as t } from "@babel/core";
+import "./babel";
 import { posix } from "path";
-import { t } from "./babel";
 import { App } from "./App";
 export interface TransformContext {
   readonly app: App;
   readonly ast: b.types.File;
-  readonly code: Promise<string>;
+  generate(): Promise<string>;
+  readonly file: string;
   transform(plugin: string): Promise<void>;
   transform(
     plugin: (ctx: TransformContext) => b.PluginItem | Promise<b.PluginItem>
   ): Promise<void>;
   inspect<S>(visitor: b.Visitor<S>, state: S): S;
+  relativePath(filepath: string): string;
+  absolutePath(filepath: string): string;
 }
 export class _TransformContext implements TransformContext {
   readonly app: App;
   private readonly _file: string;
   private readonly options: b.TransformOptions;
-  private _ast: b.types.File;
+  private _ast?: b.types.File | null | undefined;
+  private _code: string;
   get ast(): b.types.File {
-    return this._ast;
+    return this._ast!;
   }
-  private set ast(value: t.File) {
-    this._ast = value;
+  async parse() {
+    const result = await b.transformAsync(this._code, this.options);
+    this._ast = result?.ast;
   }
-  get code(): Promise<string> {
-    return b
-      .transformFromAstAsync(this.ast, undefined, {
-        ...this.options,
-        code: true,
-      })
-      .then((value) => value?.code!);
+  async generate(): Promise<string> {
+    const result = await b.transformFromAstAsync(this.ast, undefined, {
+      ...this.options,
+      code: true,
+    });
+    return result?.code!;
   }
   async transform(
     plugin:
@@ -42,7 +46,7 @@ export class _TransformContext implements TransformContext {
       overrides: [this.options],
       plugins: [_plugin],
     });
-    this.ast = result?.ast!;
+    this._ast = result?.ast!;
   }
 
   inspect<S>(visitor: b.Visitor<S>, state: S): S {
@@ -72,35 +76,48 @@ export class _TransformContext implements TransformContext {
       return posix.normalize(posix.join(this.directory, filepath));
     }
   }
-  constructor({
-    app,
-    file,
-    ast,
-    options,
-  }: {
-    app: App;
-    file: string;
-    ast: t.File;
-    options: b.TransformOptions;
-  }) {
-    this._ast = ast;
+  constructor({ app, file, code }: { app: App; file: string; code: string }) {
+    this._code = code;
     this._file = file;
     this.app = app;
-    this.options = options;
+    this.options = {
+      ast: true,
+      configFile: false,
+      babelrc: false,
+      browserslistConfigFile: false,
+      sourceType: "module",
+      cloneInputAst: false,
+      filename: file,
+      filenameRelative: file,
+      sourceFileName: file,
+      parserOpts: {
+        sourceFilename: file,
+        createParenthesizedExpressions: true,
+        plugins: [
+          "jsx",
+          "flow",
+          ...(app.options.transformOptions?.parserOpts?.plugins ?? []),
+        ],
+        sourceType: "module",
+      },
+      plugins: [
+        "@babel/plugin-syntax-export-default-from",
+        ...(app.options.transformOptions?.plugins ?? []),
+      ],
+    };
   }
+
   static async fromCode(
     app: App,
     file: string,
-    options: b.TransformOptions,
     code: string
   ): Promise<TransformContext> {
-    const result = await b.transformAsync(code, options);
     const ctx = new _TransformContext({
       app,
       file,
-      options,
-      ast: result?.ast!,
+      code,
     });
+    await ctx.parse();
     return ctx;
   }
 }

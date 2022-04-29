@@ -3,6 +3,7 @@ import b from "@babel/core";
 import t from "@babel/types";
 import Path from "node:path";
 import App from "./App";
+import fs from "node:fs/promises";
 import { parse } from "./propTypesParser";
 import {
   RemoveModuleVisitor,
@@ -16,7 +17,7 @@ import {
   SimplyJsxExpressionTransform,
   UnspreadObjectExpression,
 } from "./transforms";
-import fs from "node:fs/promises";
+import { RemoveUnusedCode } from "./transforms/RemoveUnusedCode";
 const g = parse();
 const VERSION = "11.0.3";
 const sourceRoot = "data/carbon-" + VERSION + "/packages/react/src";
@@ -50,9 +51,16 @@ const files2 = await FastGlob("components/*/*.js", {
   cwd: Path.join(process.cwd(), sourceRoot),
   ignore: ["**/*-story.js", "**/*test*.js"],
 });
-const app = new App({ sourceRoot });
+const app = new App({ sourceRoot, fs: fs });
 app.use(new RemoveModuleVisitor("prop-types"));
 app.use(new RemoveModuleVisitor("./prop-types/deprecate"));
+app.use(
+  new InlineImportVisitor([
+    "components/TextInput/util.js",
+    "internal/useNormalizedInputProps.js",
+  ])
+);
+app.use(new RemoveUnusedCode());
 app.use(new InjectSlotsVisitor(g));
 app.use(new MutationVisitor("react", "forwardRef", forwardRef));
 app.use(new InlineJsxVisitor());
@@ -64,11 +72,7 @@ app.use(
   })
 );
 app.use(new LabelModuleStmtVisitor());
-const files = [
-  "components/TextInput/util.js",
-  "internal/useNormalizedInputProps.js",
-];
-app.use(new InlineImportVisitor(files));
+
 // app.use(wrap("@babel/plugin-transform-arrow-functions"));
 // app.use(wrap("@babel/plugin-transform-function-name"));
 // app.use(wrap("@babel/plugin-transform-parameters"));
@@ -76,6 +80,7 @@ app.use(new InlineImportVisitor(files));
 // app.use(wrap("@babel/plugin-transform-destructuring"));
 app.use(new SimplyJsxExpressionTransform());
 app.use(new UnspreadObjectExpression());
+app.use(new RemoveUnusedCode());
 
 try {
   const code = await app.transform("components/TextInput/TextInput.js");

@@ -1,6 +1,6 @@
-import b, { t } from "../App/babel";
+import b from "@babel/core";
+import t from "@babel/types"
 import { Transform } from "./Transform";
-
 export class JSXAttributeTranslateVisitor extends Transform {
     private translationTable;
     constructor(translationTable: Record<string, string>) {

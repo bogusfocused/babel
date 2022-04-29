@@ -1,34 +1,33 @@
 import b from "@babel/core";
 import { compose, Middleware } from "./compose";
-import deepmerge from "deepmerge";
 import { TransformContext, _TransformContext } from "./TransformContext";
-import { AppOptions } from "./index";
-import { Loader, DefaultLoad, LoadOptions, Load } from "./LoadOptions";
 
+import { Loader, VirtualFileSystem, LoadOptions, Load } from "./load";
+
+export interface AppOptions {
+  encoding?: BufferEncoding;
+  sourceRoot?: string;
+  transformOptions?: {
+    parserOpts?: {
+      plugins?: b.ParserOptions["plugins"];
+    };
+    plugins?: b.TransformOptions["plugins"];
+  };
+  fs?: VirtualFileSystem;
+}
 export class App {
   private readonly _loader: Loader;
   private readonly transformers: Array<Middleware<TransformContext>> = [];
   private composed: Middleware | null = null;
-  private static _defaultOptions: b.TransformOptions = {
-    ast: true,
-    configFile: false,
-    babelrc: false,
-    browserslistConfigFile: false,
-    sourceType: "module",
-    cloneInputAst: false,
-    parserOpts: {
-      createParenthesizedExpressions: true,
-      plugins: ["jsx", "flow"],
-      sourceType: "module",
-    },
-    plugins: ["@babel/plugin-syntax-export-default-from"],
-  };
-  static defaultLoad: DefaultLoad;
-  private _options: AppOptions;
 
+  private _options: AppOptions;
+  get options(): Readonly<AppOptions> {
+    return this._options;
+  }
   constructor(options: AppOptions) {
-    this._loader = new Loader(App.defaultLoad);
-    this._options = deepmerge.all([options, { options: App._defaultOptions }]);
+    this._options = options;
+    encoding: this._options.encoding ?? "utf8",
+      (this._loader = new Loader(this._options.fs, this._options.encoding));
   }
   use1(fn: (transform: TransformContext) => Promise<void>) {
     this.transformers.push(fn);
@@ -49,8 +48,8 @@ export class App {
   ) {
     this._usePlugin(
       typeof plugin === "object" && "babelPlugin" in plugin
-        ? (ctx) => plugin.babelPlugin(ctx)
-        : (_ctx) => plugin
+        ? ctx => plugin.babelPlugin(ctx)
+        : _ctx => plugin
     );
   }
   private _usePlugin(
@@ -74,20 +73,15 @@ export class App {
     this._loader.onLoad(options, load);
   }
   async createTransformContext(file: string): Promise<TransformContext> {
-    const { code, options: file_options } = await Promise.resolve(
-      this._loader.load({ file, ...this._options })
+    const { code } = await Promise.resolve(
+      this._loader.load({ sourceRoot: this._options.sourceRoot, file })
     );
-    const options = deepmerge.all<b.TransformOptions>([
-      file_options,
-      this._options.options!,
-      { plugins: [] },
-    ]);
-    const ctx = await _TransformContext.fromCode(this, file, options, code);
+    const ctx = await _TransformContext.fromCode(this, file, code!);
     return ctx;
   }
   async transform(file: string): Promise<string | null | undefined> {
     const ctx = await this.createTransformContext(file);
     await this.processMessage(ctx);
-    return await ctx.code;
+    return await ctx.generate();
   }
 }

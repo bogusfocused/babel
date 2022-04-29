@@ -1,7 +1,7 @@
-import b, { t } from "../App/babel";
+import b from "@babel/core";
+import t from "@babel/types"
 import { Transform } from "./Transform";
 import { hasJSX } from "./visitor-hasJSX";
-
 // Inline all JSX Elements
 
 export class InlineJsxVisitor extends Transform {
