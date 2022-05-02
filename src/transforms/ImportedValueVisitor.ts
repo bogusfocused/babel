@@ -1,12 +1,12 @@
 import b from "@babel/core";
 import t, { assertImportDeclaration } from "@babel/types";
-import { Transform, TransformState, Visitor } from "./Transform";
+import { Transform, TransformState } from "../App";
 
 //
 type State = { relativePath: (file: string) => string };
 export abstract class ImportedValueVisitor
   extends Transform
-  implements Partial<Visitor>
+  implements Visitor
 {
   readonly importedModule: string;
   readonly importedValue?;
@@ -43,7 +43,10 @@ export abstract class ImportedValueVisitor
   private deleteDeclarationIfEmpty(path: b.NodePath): void {
     const parent = path.parentPath;
     assertImportDeclaration(parent?.node);
-    if (parent.node.specifiers.length === 0) parent.remove();
+    if (parent.node.specifiers.length === 0) {
+      parent.remove();
+      parent.parentPath?.scope.crawl();
+    }
   }
   private getImportSource(path: b.NodePath): string {
     const parent = path.parentPath;
@@ -57,7 +60,7 @@ export abstract class ImportedValueVisitor
     const binding = path.scope.bindings[path.node.local.name];
     const imported = path.node.imported;
     const remove = binding.referencePaths
-      .map((refer) =>
+      .map(refer =>
         this.raiseEvent({
           modulename: this.getImportSource(path),
           imported: "value" in imported ? imported.value : imported.name,
@@ -65,8 +68,11 @@ export abstract class ImportedValueVisitor
           state: state.state,
         })
       )
-      .every((x) => x);
-    if (remove) path.remove();
+      .every(x => x);
+    if (remove) {
+      path.remove();
+      path.parentPath.scope.crawl();
+    }
     this.deleteDeclarationIfEmpty(path);
   }
   ImportDefaultSpecifier(
@@ -76,7 +82,7 @@ export abstract class ImportedValueVisitor
     const localname = path.node.local.name;
     const binding = path.scope.bindings[localname];
     const remove = binding.referencePaths
-      .map((refer) => {
+      .map(refer => {
         const parent = refer.parentPath!;
         if (parent.isMemberExpression() && t.isIdentifier(parent.node.property))
           return this.raiseEvent({
@@ -87,8 +93,11 @@ export abstract class ImportedValueVisitor
           });
         else return false;
       })
-      .every((x) => x);
-    if (remove) path.remove();
+      .every(x => x);
+    if (remove) {
+      path.remove();
+      path.parentPath.scope.crawl();
+    }
     this.deleteDeclarationIfEmpty(path);
   }
 }

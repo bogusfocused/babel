@@ -18,6 +18,7 @@ export class MutationVisitor extends ImportedValueVisitor {
     path: b.NodePath<b.types.Node>
   ): boolean {
     this.mutation(path);
+    path.scope.crawl()
     return false;
   }
 }

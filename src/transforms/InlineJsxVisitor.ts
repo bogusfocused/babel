@@ -1,6 +1,6 @@
 import b from "@babel/core";
-import t from "@babel/types"
-import { Transform } from "./Transform";
+import t from "@babel/types";
+import { Transform } from "../App";
 import { hasJSX } from "./visitor-hasJSX";
 // Inline all JSX Elements
 
@@ -25,9 +25,9 @@ export class InlineJsxVisitor extends Transform {
   Scopable(path: b.NodePath<t.Scopable>) {
     if (!path.scope.parent) return;
     Object.values(path.scope.bindings)
-      .filter((x) => x.kind !== "module")
+      .filter(x => x.kind !== "module")
       .reduce(
-        this.reducer((x) => x.path, t.isVariableDeclarator),
+        this.reducer(x => x.path, t.isVariableDeclarator),
         []
       )
       .filter(([x, path]) => hasJSX(path.get("init")))
@@ -36,9 +36,11 @@ export class InlineJsxVisitor extends Transform {
         if (init) {
           for (let refer of x.referencePaths) {
             refer.replaceWith(t.parenthesizedExpression(init));
+            refer.scope.crawl();
           }
         }
         x.path.remove();
+        x.path.scope.crawl();
       });
   }
 }

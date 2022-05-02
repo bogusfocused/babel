@@ -1,14 +1,17 @@
 import { TransformContext } from "../App";
 import b from "@babel/core";
 import t from "@babel/types";
-import { Transform, TransformState, Visitor } from "./Transform";
+import { Transform, TransformState, Visitor } from "../App";
 
 interface InlineImportFile {
   noSideEffects: boolean;
   statements: Array<[t.Statement, string[]]>;
 }
 
-export class InlineImportVisitor extends Transform implements Partial<Visitor> {
+export class InlineImportVisitor
+  extends Transform
+  implements Visitor
+{
   private readonly files: Record<
     string,
     InlineImportFile & { context: TransformContext }
@@ -22,7 +25,7 @@ export class InlineImportVisitor extends Transform implements Partial<Visitor> {
 
   async onInit(ctx: TransformContext): Promise<void> {
     for (const file of this._paths) {
-      const context = await ctx.app.createTransformContext(file);
+      const context = await ctx.app.createTransformContext({ file });
       this.files[file] = {
         context,
         ...context.inspect<InlineImportFile>(
@@ -69,7 +72,8 @@ export class InlineImportVisitor extends Transform implements Partial<Visitor> {
         } else bstm.push(stmt);
       }
     }
-    path.scope.removeBinding("useNormalizedInputProps")
+    path.scope.crawl();
+    path.scope.removeBinding("useNormalizedInputProps");
     path.replaceWithMultiple(bstm);
   }
 }

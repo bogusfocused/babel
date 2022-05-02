@@ -14,6 +14,7 @@ export class RemoveModuleVisitor extends ImportedValueVisitor {
     while (_path && !_path.inList) _path = _path.parentPath;
     if (_path && !_path.removed) {
       _path.remove();
+      _path.parentPath?.scope.crawl()
       return true;
     }
   }

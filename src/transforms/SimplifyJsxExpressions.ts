@@ -1,29 +1,27 @@
 import b from "@babel/core";
-import t from "@babel/types"
+import t from "@babel/types";
 import { Scope } from "@babel/traverse";
-import { Transform } from "./Transform";
+import { Transform } from "../App";
 
 export class SimplyJsxExpressionTransform extends Transform {
   replaceParamWithArg(param: b.NodePath, arg: b.NodePath, scope: Scope) {
     if (param.isObjectPattern() && arg.isObjectExpression()) {
       const argp = {} as Record<string, b.NodePath<t.ObjectProperty>>;
 
-      arg.get("properties").forEach((x) => {
+      arg.get("properties").forEach(x => {
         if (x.isObjectProperty()) {
           const key = x.get("key");
           if (key.isIdentifier()) argp[key.node.name] = x;
         }
       });
 
-      param.get("properties").forEach((x) => {
+      param.get("properties").forEach(x => {
         if (x.isObjectProperty()) {
           const key = x.get("key");
           if (key.isIdentifier()) {
             const ap = argp[key.node.name];
             const binding = scope.getBinding(key.node.name);
-            binding?.referencePaths.forEach((x) =>
-              x.replaceWith(ap.node.value)
-            );
+            binding?.referencePaths.forEach(x => x.replaceWith(ap.node.value));
           }
         }
       });
@@ -31,7 +29,7 @@ export class SimplyJsxExpressionTransform extends Transform {
   }
   ReturnStatement(path: b.NodePath<t.ReturnStatement>) {
     const self = this;
-    path.traverse({
+    path.scope.traverse(path.node, {
       CallExpression(_path) {
         const callee = _path.get("callee");
         if (!callee.isIdentifier()) return;
@@ -79,5 +77,6 @@ export class SimplyJsxExpressionTransform extends Transform {
         console.log;
       },
     });
+    path.scope.crawl();
   }
 }

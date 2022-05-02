@@ -1,5 +1,5 @@
 import b from "@babel/core";
-import Path from "path";
+import Path, {ParsedPath} from "path";
 export interface VirtualFileSystem {
   readFile(path: string, options: BufferEncoding): Promise<string>;
 }

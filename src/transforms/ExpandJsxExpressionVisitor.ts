@@ -1,8 +1,8 @@
 import b from "@babel/core";
-import t from "@babel/types"
+import t from "@babel/types";
 import { createElement } from "./utils";
-import { Transform, Visitor } from "./Transform";
-export class ExpandJsxExpressionVisitor extends Transform implements Visitor {
+import { Transform } from "../App";
+export class ExpandJsxExpressionVisitor extends Transform {
   expandJsxExpression(
     x: b.NodePath<b.types.Expression> | undefined
   ): b.types.JSXElement | b.types.JSXExpressionContainer | null {
@@ -45,5 +45,6 @@ export class ExpandJsxExpressionVisitor extends Transform implements Visitor {
         }
       }
     }
+    path.scope.crawl();
   }
 }

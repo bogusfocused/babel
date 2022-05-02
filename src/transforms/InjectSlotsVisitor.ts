@@ -1,7 +1,7 @@
 import b from "@babel/core";
 import t from "@babel/types"
 import { Bundle } from "../propTypesParser";
-import { Transform, TransformState } from "./Transform";
+import { Transform,TransformState } from "../App";
 import { createElement } from "./utils";
 
 export class InjectSlotsVisitor extends Transform {

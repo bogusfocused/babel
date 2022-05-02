@@ -1,6 +1,6 @@
 import b from "@babel/core";
 import t from "@babel/types"
-import { Transform } from "./Transform";
+import { Transform } from "../App";
 
 export class LabelModuleStmtVisitor extends Transform {
   ExportDefaultDeclaration(path: b.NodePath<t.ExportDefaultDeclaration>) {

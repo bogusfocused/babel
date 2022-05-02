@@ -84,6 +84,12 @@ app.use(new RemoveUnusedCode());
 
 try {
   const code = await app.transform("components/TextInput/TextInput.js");
+  if (code) {
+    const ctx = await app.transform({
+      file: "components/TextInput/TextInput.js",
+      code,
+    });
+  }
   await dump("data/generated", "components/TextInput/TextInput.js", code!);
 } catch (err) {
   console.log(err);
