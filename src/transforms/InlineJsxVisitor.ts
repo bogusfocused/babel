@@ -4,7 +4,7 @@ import { Transform } from "../App";
 import { hasJSX } from "./visitor-hasJSX";
 // Inline all JSX Elements
 
-export class InlineJsxVisitor extends Transform {
+export class InlineJsxVisitor  {
   reducer<T, S extends t.Node>(
     maping: (value: T) => b.NodePath<t.Node>,
     predicate: (node: object) => node is S

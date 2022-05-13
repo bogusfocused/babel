@@ -2,7 +2,7 @@ import b from "@babel/core";
 import t from "@babel/types"
 import { Transform } from "../App";
 
-export class UnspreadObjectExpression extends Transform {
+export class UnspreadObjectExpression  {
   JSXSpreadAttribute(path: b.NodePath<b.types.JSXSpreadAttribute>) {
     let argument = path.get("argument");
     while (argument.isParenthesizedExpression())

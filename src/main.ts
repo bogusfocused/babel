@@ -2,22 +2,22 @@ import FastGlob from "fast-glob";
 import b from "@babel/core";
 import t from "@babel/types";
 import Path from "node:path";
-import App from "./App";
+import App, { Transform } from "./App";
 import fs from "node:fs/promises";
 import { parse } from "./propTypesParser";
+import { RemoveUnusedCode } from "./transforms/RemoveUnusedCode";
 import {
-  RemoveModuleVisitor,
-  InjectSlotsVisitor,
   ExpandJsxExpressionVisitor,
-  MutationVisitor,
-  InlineJsxVisitor,
-  LabelModuleStmtVisitor,
+  InjectSlotsVisitor,
   InlineImportVisitor,
+  InlineJsxVisitor,
   JSXAttributeTranslateVisitor,
+  LabelModuleStmtVisitor,
+  MutationVisitor,
+  RemoveModuleVisitor,
   SimplyJsxExpressionTransform,
   UnspreadObjectExpression,
 } from "./transforms";
-import { RemoveUnusedCode } from "./transforms/RemoveUnusedCode";
 const g = parse();
 const VERSION = "11.0.3";
 const sourceRoot = "data/carbon-" + VERSION + "/packages/react/src";
@@ -36,13 +36,7 @@ function forwardRef(path: b.NodePath) {
     const a = called.get("arguments")[0];
     if (a.isFunctionExpression()) {
       called.replaceWith(
-        t.functionExpression(
-          a.node.id,
-          [a.node.params[0]],
-          a.node.body,
-          a.node.generator,
-          a.node.async
-        )
+        t.functionExpression(a.node.id, [a.node.params[0]], a.node.body, a.node.generator, a.node.async)
       );
     }
   }
@@ -52,44 +46,31 @@ const files2 = await FastGlob("components/*/*.js", {
   ignore: ["**/*-story.js", "**/*test*.js"],
 });
 const app = new App({ sourceRoot, fs: fs });
-app.use(new RemoveModuleVisitor("prop-types"));
-app.use(new RemoveModuleVisitor("./prop-types/deprecate"));
-app.use(
-  new InlineImportVisitor([
-    "components/TextInput/util.js",
-    "internal/useNormalizedInputProps.js",
-  ])
-);
-app.use(new RemoveUnusedCode());
-app.use(new InjectSlotsVisitor(g));
-app.use(new MutationVisitor("react", "forwardRef", forwardRef));
-app.use(new InlineJsxVisitor());
-app.use(new ExpandJsxExpressionVisitor());
+app.useTransform(RemoveModuleVisitor, "prop-types");
+app.useTransform(RemoveModuleVisitor, "./prop-types/deprecate");
+app.useTransform(InlineImportVisitor, ["components/TextInput/util.js", "internal/useNormalizedInputProps.js"]);
+app.useTransform(RemoveUnusedCode);
+app.useTransform(InjectSlotsVisitor, g);
+app.useTransform(MutationVisitor, "react", "forwardRef", forwardRef);
+app.useTransform(InlineJsxVisitor);
+app.useTransform(ExpandJsxExpressionVisitor);
 
-app.use(
-  new JSXAttributeTranslateVisitor({
-    className: "class",
-  })
-);
-app.use(new LabelModuleStmtVisitor());
+app.useTransform(JSXAttributeTranslateVisitor, {
+  className: "class",
+});
+app.useTransform(LabelModuleStmtVisitor);
 
 // app.use(wrap("@babel/plugin-transform-arrow-functions"));
 // app.use(wrap("@babel/plugin-transform-function-name"));
 // app.use(wrap("@babel/plugin-transform-parameters"));
 // app.use(wrap("@babel/plugin-transform-spread"));
 // app.use(wrap("@babel/plugin-transform-destructuring"));
-app.use(new SimplyJsxExpressionTransform());
-app.use(new UnspreadObjectExpression());
-app.use(new RemoveUnusedCode());
+app.useTransform(SimplyJsxExpressionTransform);
+app.useTransform(UnspreadObjectExpression);
+app.useTransform(RemoveUnusedCode);
 
 try {
   const code = await app.transform("components/TextInput/TextInput.js");
-  if (code) {
-    const ctx = await app.transform({
-      file: "components/TextInput/TextInput.js",
-      code,
-    });
-  }
   await dump("data/generated", "components/TextInput/TextInput.js", code!);
 } catch (err) {
   console.log(err);

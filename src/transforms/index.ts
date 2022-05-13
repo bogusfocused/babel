@@ -7,5 +7,7 @@ export { LabelModuleStmtVisitor } from "./LabelModuleStmtVisitor";
 export { MutationVisitor } from "./MutationVisitor";
 export { RemoveModuleVisitor } from "./RemoveModuleVisitor";
 export { SimplyJsxExpressionTransform } from "./SimplifyJsxExpressions";
-export { Transform } from "../App";
 export { UnspreadObjectExpression } from "./UnspreadObjectExpression";
+export { RemoveUnusedCode } from "./RemoveUnusedCode";
+
+

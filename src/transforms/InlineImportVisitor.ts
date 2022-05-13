@@ -1,31 +1,23 @@
 import { TransformContext } from "../App";
 import b from "@babel/core";
 import t from "@babel/types";
-import { Transform, TransformState, Visitor } from "../App";
+import App, { Transform } from "../App";
 
 interface InlineImportFile {
   noSideEffects: boolean;
   statements: Array<[t.Statement, string[]]>;
 }
 
-export class InlineImportVisitor
-  extends Transform
-  implements Visitor
-{
-  private readonly files: Record<
-    string,
-    InlineImportFile & { context: TransformContext }
-  > = {};
+export class InlineImportVisitor implements Transform {
+  private readonly files: Record<string, InlineImportFile & { context: TransformContext }> = {};
   private readonly _paths: string[] = [];
   constructor(files: string[]) {
-    super();
     this._paths = files;
-    this.onPluginRequest = this.onInit;
   }
 
-  async onInit(ctx: TransformContext): Promise<void> {
+  async setup(app: App): Promise<void> {
     for (const file of this._paths) {
-      const context = await ctx.app.createTransformContext({ file });
+      const context = await app.createTransformContext({ file });
       this.files[file] = {
         context,
         ...context.inspect<InlineImportFile>(
@@ -36,15 +28,10 @@ export class InlineImportVisitor
                 if (s.isExportNamedDeclaration()) {
                   state.statements.push([s.node.declaration!, []]);
                 } else {
-                  const names = Object.keys(path.scope.bindings).filter(
-                    name => {
-                      const binding = path.scope.bindings[name];
-                      return (
-                        binding.path.isDescendant(s) ||
-                        binding.referencePaths.some(p => p.isDescendant(s))
-                      );
-                    }
-                  );
+                  const names = Object.keys(path.scope.bindings).filter(name => {
+                    const binding = path.scope.bindings[name];
+                    return binding.path.isDescendant(s) || binding.referencePaths.some(p => p.isDescendant(s));
+                  });
                   state.statements.push([s.node, names]);
                 }
               });
@@ -56,11 +43,8 @@ export class InlineImportVisitor
     }
   }
 
-  ImportDeclaration(
-    path: b.NodePath<t.ImportDeclaration>,
-    state: TransformState
-  ) {
-    const modulePath = state.state.absolutePath(path.node.source.value);
+  ImportDeclaration(path: b.NodePath<t.ImportDeclaration>, state: Transform.State) {
+    const modulePath = state.context.absolutePath(path.node.source.value);
     const filepath = this._paths.find(x => x.startsWith(modulePath));
     if (!filepath) return;
     const file = this.files[filepath];

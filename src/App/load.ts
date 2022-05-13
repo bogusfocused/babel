@@ -1,5 +1,4 @@
-import b from "@babel/core";
-import Path, {ParsedPath} from "path";
+import Path from "path";
 export interface VirtualFileSystem {
   readFile(path: string, options: BufferEncoding): Promise<string>;
 }
@@ -12,9 +11,7 @@ interface LoadResult {
   code?: string;
 }
 export type Load = (args: LoadArgs) => Promise<LoadResult> | LoadResult;
-export type DefaultLoad = (
-  args: LoadArgs
-) => Promise<{ code: string; options: b.TransformOptions }>;
+
 export class Loader {
   loads: Array<readonly [LoadOptions, Load]> = [];
   readonly fs: VirtualFileSystem | undefined;
@@ -27,12 +24,8 @@ export class Loader {
     this.loads.push([options, load] as const);
   }
   async load(args: LoadArgs): Promise<LoadResult> {
-    const code =
-      args.sourceRoot && this.fs
-        ? await this.fs.readFile(Path.join(args.sourceRoot, args.file), "utf8")
-        : undefined;
+    const code = args.sourceRoot ? await this.fs?.readFile(Path.join(args.sourceRoot, args.file), "utf8") : undefined;
 
     return { code };
   }
- 
 }

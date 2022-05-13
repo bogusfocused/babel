@@ -1,10 +1,9 @@
 import b from "@babel/core";
 import t from "@babel/types";
 import { Transform } from "../App";
-export class JSXAttributeTranslateVisitor extends Transform {
+export class JSXAttributeTranslateVisitor  {
   private translationTable;
   constructor(translationTable: Record<string, string>) {
-    super();
     this.translationTable = translationTable;
   }
   JSXAttribute(path: b.NodePath<t.JSXAttribute>) {

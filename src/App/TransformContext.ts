@@ -9,19 +9,12 @@ export interface TransformContext {
   generate(): Promise<string>;
   readonly file: string;
   readonly filepath: ParsedPath;
-  transform(plugin: string): Promise<void>;
-  transform(
-    plugin: (ctx: TransformContext) => b.PluginItem | Promise<b.PluginItem>
-  ): Promise<void>;
+  transform(plugin: b.PluginItem): Promise<void>;
   inspect<S>(visitor: b.Visitor<S>, state: S): S;
   relativePath(filepath: string): string;
   absolutePath(filepath: string): string;
 }
-export async function createContextFromCode(
-  app: App,
-  file: string,
-  code: string
-): Promise<TransformContext> {
+export async function createContextFromCode(app: App, file: string, code: string): Promise<TransformContext> {
   const ctx = new _TransformContext({
     app,
     file,
@@ -51,17 +44,11 @@ export class _TransformContext implements TransformContext {
     });
     return result?.code!;
   }
-  async transform(
-    plugin:
-      | string
-      | ((ctx: TransformContext) => b.PluginItem | Promise<b.PluginItem>)
-  ): Promise<void> {
-    const _plugin =
-      typeof plugin === "string" ? plugin : await Promise.resolve(plugin(this));
+  async transform(plugin: b.PluginItem): Promise<void> {
     const result = await b.transformFromAstAsync(this._ast!, undefined, {
       code: true,
       overrides: [this.options],
-      plugins: [_plugin],
+      plugins: [plugin],
     });
     this._ast = result?.ast!;
   }
@@ -76,8 +63,7 @@ export class _TransformContext implements TransformContext {
   }
 
   relativePath(filepath: string): string {
-    if (filepath.startsWith("."))
-      return posix.relative(this.filepath.dir, filepath);
+    if (filepath.startsWith(".")) return posix.relative(this.filepath.dir, filepath);
     return filepath;
   }
 
@@ -105,17 +91,10 @@ export class _TransformContext implements TransformContext {
       parserOpts: {
         sourceFilename: file,
         createParenthesizedExpressions: true,
-        plugins: [
-          "jsx",
-          "flow",
-          ...(app.options.transformOptions?.parserOpts?.plugins ?? []),
-        ],
+        plugins: ["jsx", "flow", ...(app.options.transformOptions?.parserOpts?.plugins ?? [])],
         sourceType: "module",
       },
-      plugins: [
-        "@babel/plugin-syntax-export-default-from",
-        ...(app.options.transformOptions?.plugins ?? []),
-      ],
+      plugins: ["@babel/plugin-syntax-export-default-from", ...(app.options.transformOptions?.plugins ?? [])],
     };
   }
 }

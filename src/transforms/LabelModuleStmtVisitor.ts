@@ -2,7 +2,7 @@ import b from "@babel/core";
 import t from "@babel/types"
 import { Transform } from "../App";
 
-export class LabelModuleStmtVisitor extends Transform {
+export class LabelModuleStmtVisitor  {
   ExportDefaultDeclaration(path: b.NodePath<t.ExportDefaultDeclaration>) {
     const defaultExport = path.getOfType("declaration", t.isIdentifier).node
       ?.name;
